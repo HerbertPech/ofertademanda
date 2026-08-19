@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reto de Mercado: ¿Movimiento o Desplazamiento?</title>
+<style>
+  :root{
+    --bg:#fffaf5;
+    --panel:#ffffff;
+    --text:#242424;
+    --muted:#6b7280;
+    --orange:#f28c28;
+    --orange-dark:#c85f00;
+    --orange-soft:#fff1df;
+    --border:#eadfd3;
+    --green:#247a4d;
+    --green-soft:#eaf7ef;
+    --red:#b83a3a;
+    --red-soft:#fff0f0;
+    --blue:#2878b8;
+    --shadow:0 12px 30px rgba(70,45,20,.08);
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    font-family:Roboto,Arial,Helvetica,sans-serif;
+    background:linear-gradient(180deg,#fff9f2,#ffffff);
+    color:var(--text);
+  }
+  .wrap{max-width:1100px;margin:0 auto;padding:24px}
+  .hero{
+    background:linear-gradient(135deg,#2b211b,#4a2b14);
+    color:white;
+    border-radius:22px;
+    padding:26px 28px;
+    box-shadow:var(--shadow);
+    position:relative;
+    overflow:hidden;
+  }
+  .hero:after{
+    content:"";
+    position:absolute;
+    width:220px;height:220px;border-radius:50%;
+    background:rgba(242,140,40,.18);
+    right:-60px;top:-90px;
+  }
+  .hero h1{margin:0 0 8px;font-size:clamp(1.65rem,3vw,2.45rem)}
+  .hero p{margin:0;max-width:800px;color:#f6e8db;line-height:1.55}
+  .formula{
+    margin-top:16px;
+    display:flex;flex-wrap:wrap;gap:8px;
+  }
+  .chip{
+    display:inline-flex;align-items:center;gap:5px;
+    background:rgba(255,255,255,.12);
+    border:1px solid rgba(255,255,255,.18);
+    padding:7px 10px;border-radius:999px;font-size:.86rem;
+  }
+  .toolbar{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:12px;margin:16px 0;
+  }
+  .metric{
+    background:var(--panel);border:1px solid var(--border);
+    border-radius:16px;padding:14px 16px;box-shadow:var(--shadow);
+  }
+  .metric .k{color:var(--muted);font-size:.8rem;text-transform:uppercase;letter-spacing:.04em}
+  .metric .v{font-size:1.45rem;font-weight:800;margin-top:3px}
+  .grid{
+    display:grid;
+    grid-template-columns:minmax(0,1.15fr) minmax(320px,.85fr);
+    gap:18px;
+  }
+  .card{
+    background:var(--panel);border:1px solid var(--border);border-radius:20px;
+    padding:20px;box-shadow:var(--shadow);
+  }
+  .round{
+    display:flex;justify-content:space-between;gap:12px;align-items:center;
+    margin-bottom:12px;
+  }
+  .round-badge{
+    background:var(--orange-soft);color:var(--orange-dark);
+    padding:7px 10px;border-radius:999px;font-weight:700;font-size:.86rem;
+  }
+  .variable-badge{
+    border:1px solid var(--border);background:#fafafa;
+    padding:7px 10px;border-radius:999px;font-size:.86rem;color:#444;
+  }
+  .scenario{
+    font-size:1.18rem;line-height:1.55;margin:15px 0 18px;
+    min-height:92px;
+  }
+  .instruction{font-size:.9rem;color:var(--muted);margin-bottom:10px}
+  .answers{
+    display:grid;grid-template-columns:1fr 1fr;gap:10px;
+  }
+  button{
+    font:inherit;cursor:pointer;border:none;
+  }
+  .answer{
+    text-align:left;border:1px solid var(--border);background:#fff;
+    border-radius:14px;padding:12px 13px;min-height:66px;
+    transition:.15s ease;
+  }
+  .answer:hover{border-color:var(--orange);transform:translateY(-1px)}
+  .answer strong{display:block;margin-bottom:3px}
+  .answer span{font-size:.83rem;color:var(--muted)}
+  .answer.correct{background:var(--green-soft);border-color:#9ad1b2;color:var(--green)}
+  .answer.wrong{background:var(--red-soft);border-color:#efb1b1;color:var(--red)}
+  .answer.dim{opacity:.55}
+  .feedback{
+    margin-top:14px;border-radius:14px;padding:13px 14px;line-height:1.45;
+    display:none;
+  }
+  .feedback.good{display:block;background:var(--green-soft);color:#185c39}
+  .feedback.bad{display:block;background:var(--red-soft);color:#7e2c2c}
+  .feedback b{display:block;margin-bottom:4px}
+  .next{
+    display:none;margin-top:13px;background:var(--orange);color:white;
+    padding:11px 18px;border-radius:12px;font-weight:700;
+  }
+  .next:hover{background:var(--orange-dark)}
+  .next.show{display:inline-block}
+  .graph-title{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+  .graph-title h2{font-size:1.05rem;margin:0}
+  .legend{font-size:.77rem;color:var(--muted)}
+  svg{width:100%;height:auto;display:block}
+  .axis{stroke:#6b625c;stroke-width:2}
+  .curve{fill:none;stroke-width:4;stroke-linecap:round}
+  .curve.base{stroke:#a7a7a7;stroke-dasharray:6 6}
+  .curve.new{stroke:var(--orange)}
+  .dot{fill:var(--orange);stroke:white;stroke-width:3}
+  .guide{stroke:#c9b9aa;stroke-dasharray:4 5}
+  .svg-label{font:700 13px Roboto,Arial;fill:#4a4039}
+  .svg-small{font:12px Roboto,Arial;fill:#74675f}
+  .graph-note{
+    min-height:48px;margin-top:8px;padding:10px 12px;border-radius:12px;
+    background:#faf7f3;color:#574b43;font-size:.88rem;line-height:1.4;
+  }
+  .help{
+    margin-top:18px;
+    background:#fff7ed;border:1px solid #f2d2ad;border-radius:18px;padding:17px 18px;
+  }
+  .help h3{margin:0 0 10px;font-size:1rem}
+  .help-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .rule{background:white;border:1px solid #f0dfcd;border-radius:13px;padding:12px}
+  .rule b{display:block;margin-bottom:5px}
+  .rule p{margin:0;color:#5f564e;font-size:.88rem;line-height:1.45}
+  .end{
+    display:none;text-align:center;padding:26px 10px;
+  }
+  .end.show{display:block}
+  .end .big{font-size:3rem;font-weight:900;color:var(--orange-dark)}
+  .restart{background:#2b211b;color:white;padding:12px 18px;border-radius:12px;font-weight:700;margin-top:10px}
+  .footer{color:var(--muted);font-size:.78rem;text-align:center;margin:18px 0 4px}
+  @media(max-width:820px){
+    .toolbar{grid-template-columns:1fr 1fr}
+    .grid{grid-template-columns:1fr}
+  }
+  @media(max-width:540px){
+    .wrap{padding:12px}
+    .hero{padding:20px}
+    .answers{grid-template-columns:1fr}
+    .help-grid{grid-template-columns:1fr}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <section class="hero">
+    <h1>Reto de mercado: ¿movimiento o desplazamiento?</h1>
+    <p>Analiza cada situación. Si cambia <b>Px</b>, hay movimiento sobre la curva. Si cambia una variable distinta a Px, la curva se desplaza. Identifica además si el cambio corresponde a la oferta o a la demanda.</p>
+    <div class="formula">
+      <span class="chip">Px · precio del bien</span>
+      <span class="chip">Py · otros bienes relacionados</span>
+      <span class="chip">α · insumos</span>
+      <span class="chip">β · tecnología</span>
+      <span class="chip">γ · número de empresas</span>
+      <span class="chip">g · gustos/preferencias</span>
+      <span class="chip">c · consumidores</span>
+      <span class="chip">y · ingreso</span>
+    </div>
+  </section>
+
+  <section class="toolbar">
+    <div class="metric"><div class="k">Pregunta</div><div class="v"><span id="current">1</span>/12</div></div>
+    <div class="metric"><div class="k">Puntos</div><div class="v" id="score">0</div></div>
+    <div class="metric"><div class="k">Racha</div><div class="v" id="streak">0</div></div>
+    <div class="metric"><div class="k">Nivel</div><div class="v" id="level">Analista</div></div>
+  </section>
+
+  <div class="grid">
+    <section class="card" id="gameCard">
+      <div class="round">
+        <span class="round-badge" id="marketTag">Mercado</span>
+        <span class="variable-badge" id="varTag">Variable: ?</span>
+      </div>
+      <div class="instruction">Elige la consecuencia correcta:</div>
+      <div class="scenario" id="scenario"></div>
+
+      <div class="answers" id="answers">
+        <button class="answer" data-answer="moveD"><strong>Movimiento sobre DEMANDA</strong><span>Cambia Px; la curva D no cambia de posición.</span></button>
+        <button class="answer" data-answer="moveS"><strong>Movimiento sobre OFERTA</strong><span>Cambia Px; la curva S no cambia de posición.</span></button>
+        <button class="answer" data-answer="shiftDR"><strong>DEMANDA → derecha</strong><span>Aumenta la demanda.</span></button>
+        <button class="answer" data-answer="shiftDL"><strong>DEMANDA ← izquierda</strong><span>Disminuye la demanda.</span></button>
+        <button class="answer" data-answer="shiftSR"><strong>OFERTA → derecha</strong><span>Aumenta la oferta.</span></button>
+        <button class="answer" data-answer="shiftSL"><strong>OFERTA ← izquierda</strong><span>Disminuye la oferta.</span></button>
+      </div>
+
+      <div class="feedback" id="feedback" aria-live="polite"></div>
+      <button class="next" id="nextBtn">Siguiente caso →</button>
+
+      <div class="end" id="endScreen">
+        <div>Resultado final</div>
+        <div class="big" id="finalScore">0/1200</div>
+        <p id="finalMsg"></p>
+        <button class="restart" id="restartBtn">Jugar otra ronda</button>
+      </div>
+    </section>
+
+    <aside class="card">
+      <div class="graph-title">
+        <h2>Visualización del efecto</h2>
+        <span class="legend">gris = situación inicial · naranja = resultado</span>
+      </div>
+      <svg viewBox="0 0 420 330" role="img" aria-label="Gráfica económica de oferta o demanda">
+        <line class="axis" x1="55" y1="270" x2="385" y2="270"></line>
+        <line class="axis" x1="55" y1="270" x2="55" y2="35"></line>
+        <text class="svg-label" x="390" y="275">Q</text>
+        <text class="svg-label" x="42" y="30">P</text>
+
+        <path id="baseCurve" class="curve base" d="M85 65 C150 110, 230 185, 350 250"></path>
+        <path id="newCurve" class="curve new" d="M85 65 C150 110, 230 185, 350 250"></path>
+
+        <line id="guideX" class="guide" x1="55" y1="170" x2="225" y2="170" style="display:none"></line>
+        <line id="guideY" class="guide" x1="225" y1="270" x2="225" y2="170" style="display:none"></line>
+        <circle id="dot1" class="dot" cx="225" cy="170" r="7" style="display:none"></circle>
+        <circle id="dot2" class="dot" cx="290" cy="215" r="7" style="display:none"></circle>
+
+        <text id="baseLabel" class="svg-small" x="330" y="235">D₀</text>
+        <text id="newLabel" class="svg-label" x="330" y="235">D₁</text>
+      </svg>
+      <div class="graph-note" id="graphNote">Responde un caso para observar si se trata de un movimiento sobre la curva o de un desplazamiento.</div>
+    </aside>
+  </div>
+
+  <section class="help">
+    <h3>Regla de oro</h3>
+    <div class="help-grid">
+      <div class="rule">
+        <b>1. Si cambia Px → movimiento sobre la curva</b>
+        <p>En demanda: Px ↑ ⇒ Qd ↓; Px ↓ ⇒ Qd ↑. En oferta: Px ↑ ⇒ Qs ↑; Px ↓ ⇒ Qs ↓.</p>
+      </div>
+      <div class="rule">
+        <b>2. Si cambia otra variable → desplazamiento</b>
+        <p>Demanda: Py, g, c, y. Oferta: α, β, γ. El sentido depende de cómo cambie la variable.</p>
+      </div>
+    </div>
+  </section>
+
+  <div class="footer">Actividad de práctica · Oferta y demanda · Principios de Economía y Finanzas</div>
+</div>
+
+<script>
+const cases = [
+  {
+    market:"Demanda", variable:"Px", answer:"moveD",
+    text:"El precio de las hamburguesas baja de $120 a $95 y, por ello, los consumidores compran más hamburguesas.",
+    exp:"Cambió Px, el precio del mismo bien. Aumenta la cantidad demandada, pero no cambia la demanda: hay un movimiento descendente a lo largo de la curva.",
+    graph:{type:"move",curve:"D",dir:"down"}
+  },
+  {
+    market:"Oferta", variable:"Px", answer:"moveS",
+    text:"El precio de venta del kilo de tomate sube de $25 a $35 y los productores deciden ofrecer una mayor cantidad.",
+    exp:"Cambió Px. Aumenta la cantidad ofrecida y se produce un movimiento ascendente sobre la misma curva de oferta.",
+    graph:{type:"move",curve:"S",dir:"up"}
+  },
+  {
+    market:"Demanda", variable:"Py", answer:"shiftDR",
+    text:"Sube el precio del café y, suponiendo que el té es un bien sustituto, más consumidores deciden comprar té.",
+    exp:"Cambió Py, el precio de un bien relacionado. Como café y té son sustitutos, aumenta la demanda de té y su curva se desplaza a la derecha.",
+    graph:{type:"shift",curve:"D",dir:"right"}
+  },
+  {
+    market:"Demanda", variable:"Py", answer:"shiftDL",
+    text:"Aumenta el precio de las consolas de videojuegos. Suponiendo que los videojuegos son bienes complementarios de las consolas, disminuye la compra de videojuegos.",
+    exp:"Cambió Py. Al encarecerse un bien complementario, disminuye la demanda del otro bien; la curva de demanda se desplaza a la izquierda.",
+    graph:{type:"shift",curve:"D",dir:"left"}
+  },
+  {
+    market:"Oferta", variable:"α", answer:"shiftSL",
+    text:"El precio de la harina aumenta considerablemente para las panaderías.",
+    exp:"Cambió α, el costo/precio de un insumo. Producir pan se vuelve más costoso, disminuye la oferta y la curva se desplaza a la izquierda.",
+    graph:{type:"shift",curve:"S",dir:"left"}
+  },
+  {
+    market:"Oferta", variable:"α", answer:"shiftSR",
+    text:"Disminuye el costo de la energía eléctrica utilizada por una fábrica de hielo.",
+    exp:"Disminuye el costo de un insumo (α). La producción resulta menos costosa, aumenta la oferta y la curva se desplaza a la derecha.",
+    graph:{type:"shift",curve:"S",dir:"right"}
+  },
+  {
+    market:"Oferta", variable:"β", answer:"shiftSR",
+    text:"Una nueva máquina permite producir botellas con mayor rapidez y menor desperdicio.",
+    exp:"Mejora β, la tecnología. La productividad aumenta y la curva de oferta se desplaza a la derecha.",
+    graph:{type:"shift",curve:"S",dir:"right"}
+  },
+  {
+    market:"Oferta", variable:"β", answer:"shiftSL",
+    text:"Una falla tecnológica obliga a varias plantas a usar temporalmente un proceso menos eficiente.",
+    exp:"Empeora β. La capacidad productiva efectiva disminuye y la oferta se desplaza a la izquierda.",
+    graph:{type:"shift",curve:"S",dir:"left"}
+  },
+  {
+    market:"Oferta", variable:"γ", answer:"shiftSR",
+    text:"Cinco nuevas cafeterías entran al mercado de una zona universitaria.",
+    exp:"Aumenta γ, el número de empresas. A cada precio, el mercado puede ofrecer más; la oferta se desplaza a la derecha.",
+    graph:{type:"shift",curve:"S",dir:"right"}
+  },
+  {
+    market:"Oferta", variable:"γ", answer:"shiftSL",
+    text:"Varias empresas productoras de miel abandonan el mercado.",
+    exp:"Disminuye γ, el número de empresas. La oferta de mercado disminuye y se desplaza a la izquierda.",
+    graph:{type:"shift",curve:"S",dir:"left"}
+  },
+  {
+    market:"Demanda", variable:"g", answer:"shiftDR",
+    text:"Una tendencia en redes sociales vuelve muy populares los alimentos ricos en proteína y aumenta el interés por el yogur griego.",
+    exp:"Cambian g, los gustos o preferencias, a favor del producto. La demanda aumenta y se desplaza a la derecha.",
+    graph:{type:"shift",curve:"D",dir:"right"}
+  },
+  {
+    market:"Demanda", variable:"g", answer:"shiftDL",
+    text:"Los consumidores empiezan a preferir bebidas sin azúcar y pierden interés por cierto refresco azucarado.",
+    exp:"Cambian g en contra del producto. La demanda disminuye y se desplaza a la izquierda.",
+    graph:{type:"shift",curve:"D",dir:"left"}
+  },
+  {
+    market:"Demanda", variable:"c", answer:"shiftDR",
+    text:"Una nueva universidad abre cerca de una zona de restaurantes y llegan miles de estudiantes a vivir en el área.",
+    exp:"Aumenta c, el número de consumidores. La demanda de comidas en la zona aumenta y la curva se desplaza a la derecha.",
+    graph:{type:"shift",curve:"D",dir:"right"}
+  },
+  {
+    market:"Demanda", variable:"c", answer:"shiftDL",
+    text:"Una zona residencial pierde población porque muchas familias se mudan a otra ciudad.",
+    exp:"Disminuye c. Al haber menos consumidores potenciales, la demanda de varios bienes locales se desplaza a la izquierda.",
+    graph:{type:"shift",curve:"D",dir:"left"}
+  },
+  {
+    market:"Demanda", variable:"y", answer:"shiftDR",
+    text:"Aumenta el ingreso de las familias y, suponiendo que las comidas en restaurantes son un bien normal, aumenta su consumo.",
+    exp:"Aumenta y, el ingreso. Para un bien normal, la demanda aumenta y se desplaza a la derecha.",
+    graph:{type:"shift",curve:"D",dir:"right"}
+  },
+  {
+    market:"Demanda", variable:"y", answer:"shiftDL",
+    text:"Aumenta el ingreso de las familias y, suponiendo que la sopa instantánea es un bien inferior en este caso, disminuye su consumo.",
+    exp:"Aumenta y, pero el bien es inferior. En este caso la demanda disminuye y se desplaza a la izquierda.",
+    graph:{type:"shift",curve:"D",dir:"left"}
+  },
+  {
+    market:"Demanda", variable:"Px", answer:"moveD",
+    text:"El precio de las entradas al cine aumenta y los consumidores compran menos entradas.",
+    exp:"Solo cambió Px. Disminuye la cantidad demandada: es un movimiento ascendente sobre la curva de demanda, no un desplazamiento.",
+    graph:{type:"move",curve:"D",dir:"up"}
+  },
+  {
+    market:"Oferta", variable:"Px", answer:"moveS",
+    text:"El precio de mercado de las artesanías baja y los productores ofrecen una menor cantidad.",
+    exp:"Cambió Px. Disminuye la cantidad ofrecida: es un movimiento descendente sobre la curva de oferta.",
+    graph:{type:"move",curve:"S",dir:"down"}
+  }
+];
+
+const totalRounds = 12;
+let deck=[], idx=0, score=0, streak=0, locked=false;
+
+const els={
+  current:document.getElementById("current"),
+  score:document.getElementById("score"),
+  streak:document.getElementById("streak"),
+  level:document.getElementById("level"),
+  scenario:document.getElementById("scenario"),
+  marketTag:document.getElementById("marketTag"),
+  varTag:document.getElementById("varTag"),
+  feedback:document.getElementById("feedback"),
+  nextBtn:document.getElementById("nextBtn"),
+  answers:document.getElementById("answers"),
+  endScreen:document.getElementById("endScreen"),
+  finalScore:document.getElementById("finalScore"),
+  finalMsg:document.getElementById("finalMsg"),
+  restartBtn:document.getElementById("restartBtn"),
+  baseCurve:document.getElementById("baseCurve"),
+  newCurve:document.getElementById("newCurve"),
+  dot1:document.getElementById("dot1"),
+  dot2:document.getElementById("dot2"),
+  guideX:document.getElementById("guideX"),
+  guideY:document.getElementById("guideY"),
+  baseLabel:document.getElementById("baseLabel"),
+  newLabel:document.getElementById("newLabel"),
+  graphNote:document.getElementById("graphNote")
+};
+
+function shuffle(a){
+  const arr=[...a];
+  for(let i=arr.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1));
+    [arr[i],arr[j]]=[arr[j],arr[i]];
+  }
+  return arr;
+}
+
+function levelName(){
+  if(score>=950) return "Maestría";
+  if(score>=650) return "Especialista";
+  if(score>=350) return "Economista";
+  return "Analista";
+}
+
+function demandPath(offset=0){
+  return `M${85+offset} 65 C${150+offset} 110, ${230+offset} 185, ${350+offset} 250`;
+}
+function supplyPath(offset=0){
+  return `M${85+offset} 250 C${165+offset} 195, ${245+offset} 120, ${350+offset} 65`;
+}
+
+function resetGraph(c){
+  const isD=c.graph.curve==="D";
+  els.baseCurve.setAttribute("d", isD?demandPath(0):supplyPath(0));
+  els.newCurve.setAttribute("d", isD?demandPath(0):supplyPath(0));
+  els.newCurve.style.opacity=".25";
+  els.baseLabel.textContent=isD?"D₀":"S₀";
+  els.newLabel.textContent=isD?"D₁":"S₁";
+  els.baseLabel.setAttribute("x","330");
+  els.newLabel.setAttribute("x","330");
+  els.baseLabel.setAttribute("y",isD?"235":"82");
+  els.newLabel.setAttribute("y",isD?"235":"82");
+  els.dot1.style.display="none";
+  els.dot2.style.display="none";
+  els.guideX.style.display="none";
+  els.guideY.style.display="none";
+  els.graphNote.textContent="Primero responde. Después se mostrará el efecto correcto.";
+}
+
+function showGraph(c){
+  const g=c.graph, isD=g.curve==="D";
+  els.newCurve.style.opacity="1";
+  if(g.type==="shift"){
+    const off=g.dir==="right"?38:-38;
+    els.baseCurve.setAttribute("d",isD?demandPath(0):supplyPath(0));
+    els.newCurve.setAttribute("d",isD?demandPath(off):supplyPath(off));
+    els.baseLabel.textContent=isD?"D₀":"S₀";
+    els.newLabel.textContent=isD?"D₁":"S₁";
+    els.baseLabel.setAttribute("x","330");
+    els.newLabel.setAttribute("x",String(330+off));
+    els.baseLabel.setAttribute("y",isD?"235":"82");
+    els.newLabel.setAttribute("y",isD?"235":"82");
+    els.graphNote.innerHTML = `<b>Desplazamiento ${g.dir==="right"?"a la derecha":"a la izquierda"}.</b> Cambió una variable distinta de Px, por lo que cambia la ${isD?"demanda":"oferta"} a cada nivel de precio.`;
+  } else {
+    els.newCurve.setAttribute("d",isD?demandPath(0):supplyPath(0));
+    els.baseCurve.setAttribute("d",isD?demandPath(0):supplyPath(0));
+    els.baseCurve.style.opacity=".3";
+    let p1,p2;
+    if(isD){
+      p1={x:205,y:155};
+      p2=g.dir==="down"?{x:285,y:213}:{x:135,y:103};
+    }else{
+      p1={x:210,y:158};
+      p2=g.dir==="up"?{x:286,y:105}:{x:135,y:215};
+    }
+    els.dot1.setAttribute("cx",p1.x); els.dot1.setAttribute("cy",p1.y);
+    els.dot2.setAttribute("cx",p2.x); els.dot2.setAttribute("cy",p2.y);
+    els.dot1.style.display="block"; els.dot2.style.display="block";
+    els.newLabel.textContent=isD?"D":"S";
+    els.baseLabel.textContent="";
+    els.graphNote.innerHTML = `<b>Movimiento sobre la misma curva.</b> Cambió Px; cambia la cantidad ${isD?"demandada":"ofrecida"}, no la posición de la curva.`;
+  }
+}
+
+function render(){
+  locked=false;
+  els.endScreen.classList.remove("show");
+  els.answers.style.display="grid";
+  const c=deck[idx];
+  els.current.textContent=idx+1;
+  els.scenario.textContent=c.text;
+  els.marketTag.textContent="Caso de "+c.market;
+  els.varTag.textContent="Variable: "+c.variable;
+  els.feedback.className="feedback";
+  els.feedback.innerHTML="";
+  els.nextBtn.classList.remove("show");
+  [...document.querySelectorAll(".answer")].forEach(b=>{
+    b.classList.remove("correct","wrong","dim");
+    b.disabled=false;
+  });
+  resetGraph(c);
+}
+
+function answer(btn){
+  if(locked) return;
+  locked=true;
+  const c=deck[idx];
+  const chosen=btn.dataset.answer;
+  const ok=chosen===c.answer;
+  if(ok){
+    streak++;
+    const bonus=Math.min(streak-1,4)*10;
+    score+=100+bonus;
+    btn.classList.add("correct");
+    els.feedback.className="feedback good";
+    els.feedback.innerHTML=`<b>¡Correcto! +${100+bonus} puntos</b>${c.exp}`;
+  }else{
+    streak=0;
+    btn.classList.add("wrong");
+    document.querySelector(`[data-answer="${c.answer}"]`).classList.add("correct");
+    els.feedback.className="feedback bad";
+    els.feedback.innerHTML=`<b>No exactamente.</b>${c.exp}`;
+  }
+  [...document.querySelectorAll(".answer")].forEach(b=>{
+    b.disabled=true;
+    if(!b.classList.contains("correct")&&!b.classList.contains("wrong")) b.classList.add("dim");
+  });
+  els.score.textContent=score;
+  els.streak.textContent=streak;
+  els.level.textContent=levelName();
+  showGraph(c);
+  els.nextBtn.classList.add("show");
+}
+
+function finish(){
+  els.answers.style.display="none";
+  els.scenario.textContent="";
+  els.marketTag.textContent="Ronda terminada";
+  els.varTag.textContent="Repaso";
+  els.feedback.className="feedback";
+  els.nextBtn.classList.remove("show");
+  els.endScreen.classList.add("show");
+  const max=totalRounds*140; // máximo teórico aproximado con rachas
+  els.finalScore.textContent=score+" puntos";
+  const pct=score/(totalRounds*100);
+  let msg="Conviene repasar la diferencia entre Px y las variables que desplazan las curvas.";
+  if(pct>=.9) msg="Dominio sobresaliente: distingues con precisión movimientos y desplazamientos.";
+  else if(pct>=.7) msg="Buen dominio: revisa especialmente bienes relacionados e ingreso.";
+  else if(pct>=.5) msg="Vas bien: refuerza qué variables pertenecen a oferta y cuáles a demanda.";
+  els.finalMsg.textContent=msg;
+  els.graphNote.textContent="Ronda concluida. Reinicia para obtener una combinación distinta de casos.";
+}
+
+els.answers.addEventListener("click",e=>{
+  const btn=e.target.closest(".answer");
+  if(btn) answer(btn);
+});
+els.nextBtn.addEventListener("click",()=>{
+  idx++;
+  if(idx>=totalRounds) finish();
+  else render();
+});
+els.restartBtn.addEventListener("click",start);
+
+function start(){
+  deck=shuffle(cases).slice(0,totalRounds);
+  idx=0;score=0;streak=0;
+  els.score.textContent=0;els.streak.textContent=0;els.level.textContent="Analista";
+  render();
+}
+start();
+</script>
+</body>
+</html>
